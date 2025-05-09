@@ -12,7 +12,7 @@ const LoadingScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.message}>We're crafting your song... 🎶</Text>
-      <ActivityIndicator size={48} color="#7B61FF" style={styles.spinner} />
+      <ActivityIndicator size="large" color="#7B61FF" style={styles.spinner} />
       <Text style={styles.subtext}>Mixing the beats, tuning the vocals...</Text>
     </View>
   );
