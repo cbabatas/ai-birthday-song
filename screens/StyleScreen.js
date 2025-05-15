@@ -2,39 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar } from 'react-native';
 
 const vibeTagMap = {
-  "Party Pop 🎉": ["pop", "party", "happy", "dance pop", "uplifting"],
-  "Romantic Ballad ❤️": ["pop", "melodic", "love", "ballad", "acoustic"],
-  "Funny Rap 😂": ["rap", "funny", "boom bap", "party", "boastful"],
-  "WU Emotional Piano🎹": ["piano", "emotional", "melodic", "ballad", "ambient"],
-  "Upbeat EDM 💃": ["electronic", "edm", "dance", "party", "energetic"]
+  "Party Pop": {
+    emoji: "🎶",
+    tags: ["pop", "party", "happy", "dance pop", "uplifting"]
+  },
+  "Romantic Ballad": {
+    emoji: "💖",
+    tags: ["pop", "melodic", "love", "ballad", "acoustic"]
+  },
+  "Funny Rap": {
+    emoji: "🎤",
+    tags: ["rap", "funny", "boom bap", "party", "boastful"]
+  },
+  "Emotional Piano": {
+    emoji: "🎹",
+    tags: ["piano", "emotional", "melodic", "ballad", "ambient"]
+  },
+  "Upbeat EDM": {
+    emoji: "🎧",
+    tags: ["electronic", "edm", "dance", "party", "energetic"]
+  }
 };
 
 const StyleScreen = ({ route, navigation }) => {
   const { tags = [], name, relation, traits, message } = route.params || {};
   const [selectedStyle, setSelectedStyle] = useState('');
-  const [recommendedVibes, setRecommendedVibes] = useState([]);
+  const [vibeScores, setVibeScores] = useState([]);
 
   useEffect(() => {
     // Calculate matching scores for each vibe based on tags
-    const vibeScores = Object.entries(vibeTagMap).map(([vibeName, vibeTags]) => {
-      const matchingTags = vibeTags.filter(tag => tags.includes(tag));
+    const scores = Object.entries(vibeTagMap).map(([vibeName, vibe]) => {
+      const matchingTags = vibe.tags.filter(tag => tags.includes(tag));
       return {
-        name: vibeName,
-        score: matchingTags.length,
-        emoji: vibeName.split(' ').pop() // Get the emoji from the vibe name
+        label: vibeName,
+        emoji: vibe.emoji,
+        score: matchingTags.length
       };
-    });
+    }).sort((a, b) => b.score - a.score); // Sort by score but keep all vibes
 
-    // Sort vibes by matching score (highest first)
-    const sortedVibes = vibeScores
-      .sort((a, b) => b.score - a.score)
-      .filter(vibe => vibe.score > 0); // Only include vibes with matching tags
-
-    setRecommendedVibes(sortedVibes);
+    setVibeScores(scores);
   }, [tags]);
 
   const handleNext = () => {
-    const selectedVibeTags = vibeTagMap[selectedStyle] || [];
+    const selectedVibeTags = vibeTagMap[selectedStyle]?.tags || [];
     const combinedTags = [...new Set([...tags, ...selectedVibeTags])];
     
     navigation.navigate('Loading', {
@@ -61,29 +71,24 @@ const StyleScreen = ({ route, navigation }) => {
           </TouchableOpacity>
           <Text style={styles.title}>Choose a vibe for your song</Text>
         </View>
-        
-        {recommendedVibes.length > 0 && (
-          <Text style={styles.recommendedText}>Recommended vibes based on your choices:</Text>
-        )}
-        
         <View style={styles.styleGrid}>
-          {recommendedVibes.map((vibe) => (
+          {vibeScores.map((style, index) => (
             <TouchableOpacity
-              key={vibe.name}
+              key={style.label}
               style={[
                 styles.styleBtn,
-                selectedStyle === vibe.name && styles.styleSelected,
-                { opacity: vibe.score > 0 ? 1 : 0.5 }
+                selectedStyle === style.label && styles.styleSelected,
+                index === 0 && style.score > 0 && styles.recommended
               ]}
-              onPress={() => setSelectedStyle(vibe.name)}
-              accessibilityLabel={`Select ${vibe.name}`}
+              onPress={() => setSelectedStyle(style.label)}
+              accessibilityLabel={`Select ${style.label}`}
             >
-              <Text style={styles.emoji}>{vibe.emoji}</Text>
-              <Text style={styles.styleLabel}>{vibe.name.split(' ').slice(0, -1).join(' ')}</Text>
+              <Text style={[styles.emoji, selectedStyle === style.label && styles.textSelected]}>{style.emoji}</Text>
+              <Text style={[styles.styleLabel, selectedStyle === style.label && styles.textSelected]}>{style.label}</Text>
+              {index === 0 && style.score > 0 && <Text style={styles.recommendedText}>Recommended</Text>}
             </TouchableOpacity>
           ))}
         </View>
-
         <TouchableOpacity
           style={[styles.nextBtn, !selectedStyle && styles.disabledBtn]}
           onPress={handleNext}
@@ -92,6 +97,9 @@ const StyleScreen = ({ route, navigation }) => {
         >
           <Text style={styles.nextText}>Generate My Song</Text>
         </TouchableOpacity>
+        <View style={styles.outputPlaceholder}>
+          <Text style={styles.placeholderText}>Your generated song will appear here!</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -128,12 +136,6 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  recommendedText: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 12,
-    color: '#666',
-  },
   styleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -149,33 +151,50 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   styleSelected: {
-    backgroundColor: '#7B61FF20',
+    backgroundColor: '#7B61FF',
+  },
+  recommended: {
     borderColor: '#7B61FF',
-    borderWidth: 2,
+    borderWidth: 1,
   },
   emoji: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 28,
+    marginBottom: 10,
   },
   styleLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    textAlign: 'center',
+    color: '#333',
+  },
+  textSelected: {
+    color: '#fff',
+  },
+  recommendedText: {
+    fontSize: 12,
+    color: '#7B61FF',
+    marginTop: 4,
   },
   nextBtn: {
     backgroundColor: '#7B61FF',
-    borderRadius: 12,
     padding: 16,
+    borderRadius: 30,
     alignItems: 'center',
-    marginTop: 'auto',
+  },
+  disabledBtn: {
+    backgroundColor: '#ccc',
   },
   nextText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
   },
-  disabledBtn: {
-    opacity: 0.5,
+  outputPlaceholder: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#aaa',
+    fontSize: 15,
   },
 });
 
